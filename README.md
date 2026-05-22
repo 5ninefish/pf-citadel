@@ -2,7 +2,7 @@
 
 An AI-governed operating surface for a founder-led company. Citadel is a local web interface that routes messages to a council of AI models — Claude, Gemini, Grok, DeepSeek, and local Gemma — with shared context, persistent memory, and a daily token budget.
 
-Built by [PeakForge](https://github.com/5ninefish) in Kapolei, Hawaii.
+Built by [5ninefish](https://github.com/5ninefish) in Kapolei, Hawaii.
 
 ---
 
