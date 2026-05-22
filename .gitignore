@@ -1,0 +1,10 @@
+.env
+*.db
+logs/
+__pycache__/
+*.pyc
+.DS_Store
+council_history.db
+daily_spend.json
+COUNCIL_LEDGER.md
+gemini_cache.uri

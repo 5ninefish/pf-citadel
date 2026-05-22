@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Citadel — PeakForge</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#141414;--bg-panel:#1a1a1a;--bg-input:#1e1e1e;--border:#2a2a2a;
+--text:#d8d8d8;--text-dim:#777;--text-muted:#999;--scrollbar:#2a2a2a;
+--col-dalen:#8a9aaa;--col-gec:#7a9aaa;--col-grc:#9a8aaa;
+--col-nexus:#9a8a9a;--col-apex:#8a9a8a;--col-horizon:#8aaa9a;
+--col-clc:#8a9a8a;--col-gemma:#9a9a7a;--col-system:#666}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;line-height:1.6}
+#app{display:flex;flex-direction:row;height:100vh;max-width:1080px;margin:0 auto;position:relative}
+#sidebar{width:200px;min-width:200px;background:var(--bg-panel);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width 0.2s ease,min-width 0.2s ease;overflow:hidden;flex-shrink:0}
+#sidebar.collapsed{width:44px;min-width:44px}
+#sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:12px 10px;border-bottom:1px solid var(--border);flex-shrink:0;min-height:44px}
+#wordmark{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;color:var(--text-dim);text-transform:uppercase;white-space:nowrap;overflow:hidden;opacity:1;transition:opacity 0.15s}
+#sidebar.collapsed #wordmark{opacity:0;width:0;pointer-events:none}
+.toggle-btn{background:transparent;border:none;cursor:pointer;color:var(--text-dim);padding:2px;display:flex;align-items:center;justify-content:center;border-radius:3px;flex-shrink:0}
+.toggle-btn:hover{color:var(--text-muted);background:#242424}
+#nav-list{flex:1;overflow-y:auto;padding:6px 0}
+#nav-list::-webkit-scrollbar{width:3px}
+#nav-list::-webkit-scrollbar-thumb{background:var(--scrollbar)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;border-radius:4px;margin:1px 6px;transition:background 0.1s;white-space:nowrap}
+.nav-item:hover{background:#242424}
+.nav-item.active{background:#242424;border-left:2px solid #666;padding-left:8px}
+.nav-icon{flex-shrink:0;width:20px;display:flex;align-items:center;justify-content:center}
+.nav-label{font-size:0.72rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-dim);transition:opacity 0.15s;white-space:nowrap}
+.nav-item.active .nav-label{color:var(--text)}
+#sidebar.collapsed .nav-label{opacity:0;width:0;overflow:hidden}
+#sidebar.collapsed .nav-item{justify-content:center;margin:1px 4px;padding:7px 0}
+#sidebar.collapsed .nav-item.active{border-left:2px solid #666}
+#sidebar-footer{padding:8px 6px;border-top:1px solid var(--border);flex-shrink:0}
+.cheatsheet-btn{width:100%;background:transparent;border:1px solid var(--border);border-radius:3px;padding:5px 8px;cursor:pointer;color:var(--text-dim);font-size:0.65rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:6px;transition:border-color 0.15s,color 0.15s;white-space:nowrap;overflow:hidden}
+.cheatsheet-btn:hover{border-color:#444;color:var(--text-muted)}
+#sidebar.collapsed .cheatsheet-btn .btn-label{opacity:0;width:0;overflow:hidden}
+#floating-tooltip{position:absolute;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:4px;padding:4px 10px;font-size:0.68rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text);white-space:nowrap;pointer-events:none;display:none;z-index:999}
+#main{flex:1;display:flex;flex-direction:column;min-width:0}
+#main-header{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;min-height:44px}
+#committee-label{font-size:0.68rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);white-space:nowrap}
+#agent-pills{display:flex;gap:4px;flex-wrap:wrap}
+.pill{font-size:0.58rem;padding:2px 6px;border-radius:2px;border:1px solid var(--border);color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;font-weight:600}
+.pill-gec{color:#7a9aaa;border-color:#2a3a4a}.pill-grc{color:#9a8aaa;border-color:#3a2a4a}
+.pill-clc{color:#8a9a8a;border-color:#2a3a2a}.pill-gemma{color:#9a9a7a;border-color:#3a3a2a}
+.pill-horizon{color:#8aaa9a;border-color:#2a4a3a}.pill-nexus{color:#9a8a9a;border-color:#3a2a3a}
+.pill-apex{color:#8a9a8a;border-color:#2a3a2a}
+#banner{font-size:0.68rem;color:var(--text-dim);padding:6px 16px;border-bottom:1px solid var(--border);flex-shrink:0;min-height:24px}
+#messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:0;scroll-behavior:smooth}
+#messages::-webkit-scrollbar{width:4px}
+#messages::-webkit-scrollbar-track{background:transparent}
+#messages::-webkit-scrollbar-thumb{background:var(--scrollbar);border-radius:2px}
+.msg{display:flex;flex-direction:column;gap:4px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.msg.msg-dalen{background:#1e1e1e;border:1px solid #2a2a2a;border-radius:6px;padding:10px 14px;margin-left:40px}
+.msg-meta{display:flex;align-items:center;gap:8px}
+.msg-speaker{font-size:1.0rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase}
+.msg-time{font-size:0.65rem;color:var(--text-dim)}
+.msg-body{color:var(--text);font-size:0.92rem;line-height:1.7;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word}
+.msg-actions{display:flex;gap:6px;margin-top:2px}
+.copy-btn{background:transparent;border:1px solid var(--border);border-radius:3px;padding:2px 7px;cursor:pointer;color:var(--text-dim);font-size:0.68rem;display:inline-flex;align-items:center;gap:4px;transition:border-color 0.15s,color 0.15s}
+.copy-btn:hover{border-color:var(--text-muted);color:var(--text-muted)}
+.spk-DALEN{color:var(--col-dalen)}.spk-GEC{color:var(--col-gec)}.spk-GRC{color:var(--col-grc)}
+.spk-NEXUS{color:var(--col-nexus)}.spk-APEX{color:var(--col-apex)}.spk-SYSTEM{color:var(--col-system)}
+.spk-HORIZON{color:var(--col-horizon)}.spk-CLC{color:var(--col-clc)}.spk-GEMMA{color:var(--col-gemma)}
+.streaming::after{content:"▋";animation:blink 0.8s step-end infinite;color:var(--text-dim);margin-left:2px}
+@keyframes blink{50%{opacity:0}}
+#dropzone{margin:0 16px;border:1px dashed var(--border);border-radius:4px;padding:8px 14px;font-size:0.68rem;color:var(--text-dim);text-align:center;cursor:pointer;transition:border-color 0.15s,color 0.15s;flex-shrink:0}
+#dropzone.drag-over{border-color:var(--text-muted);color:var(--text-muted)}
+#dropzone.has-file{border-color:#5a7a5a;color:#7a9a7a}
+#input-area{padding:12px 16px 16px;flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+#input-row{display:flex;gap:8px;align-items:flex-end}
+#user-input{flex:1;background:var(--bg-input);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:0.92rem;font-family:inherit;padding:10px 14px;resize:none;min-height:42px;max-height:160px;overflow-y:auto;outline:none;transition:border-color 0.15s;line-height:1.5}
+#user-input:focus{border-color:#3a3a3a}
+#user-input::placeholder{color:var(--text-dim)}
+#stop-btn{background:#242424;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);padding:10px 16px;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.15s,color 0.15s,border-color 0.15s;align-self:flex-end;height:42px;margin-right:4px}
+#stop-btn:hover{background:#2a2a2a;color:#9a5555;border-color:#5a3a3a}
+#stop-btn:disabled{opacity:0.4;cursor:not-allowed}
+#send-btn{background:#242424;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);padding:10px 16px;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:background 0.15s,color 0.15s;align-self:flex-end;height:42px}
+#send-btn:hover{background:#2a2a2a;color:var(--text)}
+#send-btn:disabled{opacity:0.4;cursor:not-allowed}
+#send-btn.waiting{opacity:1;cursor:not-allowed;color:var(--text-dim)}
+#factory-btn {
+    display: none;
+    background: #1a1a1a;
+    color: #c87e4a;
+    border: 1px solid #3a2a1a;
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+#factory-btn:hover {
+    background: #2a1a0a;
+    border-color: #c87e4a;
+    color: #e09a6a;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:10px;height:10px;border:1.5px solid var(--text-dim);border-top-color:var(--text-muted);border-radius:50%;animation:spin 0.7s linear infinite;margin-right:6px;vertical-align:middle}
+#factory-status{display:none;padding:4px 16px;font-size:0.65rem;color:#8aaa9a;border-bottom:1px solid var(--border);letter-spacing:0.06em;background:var(--bg-panel)}
+.thinking-msg{color:var(--text-dim);font-size:0.85rem;font-style:italic;padding:8px 0 8px 0;display:flex;align-items:center;gap:8px}
+.thinking-elapsed{font-size:0.72rem;color:#444;font-family:monospace}
+#autocomplete{display:none;position:fixed;background:var(--bg-panel);border:1px solid var(--border);border-radius:4px;font-size:0.75rem;z-index:100;overflow:hidden}
+.ac-item{padding:6px 12px;cursor:pointer;color:var(--text-muted);display:flex;gap:12px}
+.ac-item:hover,.ac-item.selected{background:var(--bg-input);color:var(--text)}
+.ac-cmd{color:var(--text);font-family:monospace}
+.ac-desc{color:var(--text-dim);font-size:0.68rem}
+#footer{padding:4px 16px 8px;font-size:0.65rem;color:var(--text-dim);flex-shrink:0;display:flex;justify-content:space-between}
+.mention-bar{display:flex;flex-direction:row;gap:4px;margin-top:6px;justify-content:flex-start;align-items:center;flex-wrap:wrap}
+.mention-btn{background:transparent;border:1px solid var(--border);border-radius:3px;padding:2px 8px;font-size:0.68rem;color:var(--text-dim);cursor:pointer;transition:border-color 0.15s,color 0.15s;white-space:nowrap}
+.mention-btn:hover{border-color:var(--text-muted);color:var(--text-muted)}
+
+.overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:flex-start;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.cs-panel{background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;width:100%;max-height:100%;display:flex;flex-direction:column;overflow:hidden}
+.cs-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.cs-title{font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted)}
+.cs-close{background:transparent;border:none;cursor:pointer;color:var(--text-dim);font-size:1rem;line-height:1;padding:2px 8px;border-radius:3px}
+.cs-close:hover{color:var(--text);background:#242424}
+.cs-body{overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.cs-body::-webkit-scrollbar{width:3px}
+.cs-body::-webkit-scrollbar-thumb{background:var(--scrollbar)}
+.cs-section-label{font-size:0.6rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#444;padding:4px 0 2px}
+.cs-row{background:var(--bg);border:1px solid #222;border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.cs-row.phase12{opacity:0.45}
+.cs-row-header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cs-name{font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text)}
+.cs-engine{font-size:0.6rem;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap}
+.cs-scope{font-size:0.75rem;color:#777;line-height:1.5}
+.cs-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.cs-tag{font-size:0.6rem;padding:2px 6px;border-radius:2px;border:1px solid var(--border);color:var(--text-dim);letter-spacing:0.04em}
+.cs-tag.esc{border-color:#3a2a2a;color:#7a5555}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="floating-tooltip"></div>
+  <div class="overlay" id="overlay">
+    <div class="cs-panel">
+      <div class="cs-header">
+        <span class="cs-title">Committee Guide</span>
+        <button class="cs-close" onclick="closeCheatsheet()">&#x2715;</button>
+      </div>
+      <div class="cs-body" id="cs-body"></div>
+    </div>
+  </div>
+  <div class="overlay" id="ops-overlay">
+    <div class="cs-panel" style="max-width:640px">
+      <div class="cs-header">
+        <span class="cs-title">Ops Cheatsheet</span>
+        <button class="cs-close" onclick="closeOps()">&#x2715;</button>
+      </div>
+      <div class="cs-body" id="ops-body"></div>
+    </div>
+  </div>
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <span id="wordmark">Citadel</span>
+      <button class="toggle-btn" onclick="toggleSidebar()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="nav-list"></div>
+    <div id="sidebar-footer">
+      <button class="cheatsheet-btn" onclick="openOps()" style="margin-bottom:4px">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        <span class="btn-label">Ops Cheatsheet</span>
+      </button>
+      <button class="cheatsheet-btn" onclick="openCheatsheet()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span class="btn-label">Committee Guide</span>
+      </button>
+    </div>
+  </div>
+  <div id="main">
+    <div id="main-header">
+      <span id="committee-label">COUNCIL</span>
+      <div id="agent-pills"></div>
+    </div>
+    <div id="banner">Connecting...</div>
+    <div id="factory-status"><span class="spinner"></span>⚙ Factory running — results will post to this tab when complete</div>
+    <div id="messages"></div>
+    <div id="dropzone">Drop file here to inject into next message (.md .py .json .txt .log)</div>
+    <div id="input-area">
+      <div id="input-row">
+        <textarea id="user-input" placeholder="Message council... (/ for commands)" rows="1"></textarea>
+        <button id="stop-btn">Stop</button>
+        <button id="send-btn">Send</button>
+        <button id="factory-btn" title="Send as async cascade — walk away, results post back automatically">⚙ Factory</button>
+      </div>
+      <div class="mention-bar">
+        <button class="mention-btn" onclick="insertMention('@gec')">@gec</button>
+        <button class="mention-btn" onclick="insertMention('@grc')">@grc</button>
+        <button class="mention-btn" onclick="insertMention('@clc')">@clc</button>
+        <button class="mention-btn" onclick="insertMention('@gef')" title="Gemini Flash — fast">@gef</button>
+        <button class="mention-btn" onclick="insertMention('@grf')" title="Grok Fast — non-reasoning">@grf</button>
+        <button class="mention-btn" onclick="insertMention('@nexus')">@nexus</button>
+        <button class="mention-btn" onclick="insertMention('@apex')">@apex</button>
+        <button class="mention-btn" onclick="insertMention('@openclaw')">@openclaw</button>
+      </div>
+    </div>
+    <div id="footer">
+      <span id="status">ready</span>
+      <span id="footer-committee">COUNCIL</span>
+    </div>
+  </div>
+</div>
+<div id="autocomplete"></div>
+<script>
+var API="http://192.168.50.229:8520";
+var activeCommittee="council";
+var injectedFiles=[];
+var isWaiting=false;
+var acIndex=-1;
+var sidebarCollapsed=false;
+
+var COMMITTEES=[
+  {key:"council",   label:"Council",        agents:["gec","grc","horizon"],                  scope:"Pure empire strategy + live research. No technical clutter.",                                     escalation:"CEO decision required",                 engine:"All"},
+  {key:"health",    label:"Health",          agents:["nexus","apex","gemma"],                 scope:"Biomarkers, Oura protocols, longevity optimization.",                                              escalation:"Red-line health risk",                  engine:"Founder"},
+  {key:"engine1",   label:"Engine 1",        agents:["gec","grc","clc","horizon"],         scope:"White Peak: global sourcing, China logistics, 90-day lead times, whale-scale client arbitrage.",  escalation:">$50K impact or logistics risk",        engine:"Engine 1"},
+  {key:"trading",   label:"Trading",         agents:["grc","gec","clc","gemma","horizon"], scope:"Bot 10 live ops, parameter tuning, new bot creation, execution quality.",                         escalation:"Hard gate or >$5K capital",             engine:"Engine 3"},
+  {key:"tech",      label:"Tech & Arch",     agents:["gec","grc","clc","gemma","horizon"], scope:"Architecture phases, dashboard builds, troubleshooting, future buildouts.",                       escalation:"Architecture changes",                  engine:"All"},
+  {key:"bizdev",    label:"Biz Dev",         agents:["gec","grc","clc","gemma","horizon"], scope:"New opportunity incubator: feasibility, first models, due diligence.",                            escalation:">$50K capital or pivot",                engine:"New engines"},
+  {key:"tax",       label:"Tax / Liability", agents:["gec","grc","gemma","horizon"],          scope:"Audit risk, entity structure, purchases, compliance. Advisory only.",                              escalation:"Material risk or >$10K",                engine:"All"},
+  {key:"chronos",   label:"Chronos",         agents:["gec","gemma","horizon"],                scope:"Timing, crons, cadence. Future: daemon control flags via empire_state.json.",                     escalation:"Timing conflicts",                      engine:"All"},
+  {key:"marketing", label:"Marketing",       agents:["gec","gemma","horizon"],                scope:"Engine 2 activation: W.Peak SEO, affiliates, digital brand, content ops.",                        escalation:">$10K campaign",                        engine:"Engine 2"},
+  {key:"secops",    label:"SecOps",          agents:["clc","gemma","horizon"],             scope:"API key rotation, cl_bridge audits, server uptime, kill-switch protocols.",                       escalation:"Unauthorized access or 403/401 spikes", engine:"All"}
+];
+
+var PHASE12=[
+  {label:"Equity Portfolio",    agents:["grc","gec","gemma"], scope:"$800K+ IRA equities, rebalancing, SEPP 2030 planning.", escalation:">10% rebalance or SEPP risk", engine:"Founder wealth"},
+  {label:"Human Capital",       agents:[],                    scope:"Hiring, team ops, contractor management.",              escalation:"TBD",                         engine:"All"},
+  {label:"Customer Success",    agents:[],                    scope:"Client retention, NPS, expansion revenue.",             escalation:"TBD",                         engine:"Engine 1"},
+  {label:"Energy Optimization", agents:[],                    scope:"Infrastructure power, sustainability, efficiency.",     escalation:"TBD",                         engine:"All"}
+];
+
+var NAV_ICONS={
+  council:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  health:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+  engine1:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+  trading:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>',
+  tech:      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
+  bizdev:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  tax:       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>',
+  chronos:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  marketing: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+  secops:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'
+};
+
+var SPEAKERS={
+  DALEN:   {label:"Dalen",   cls:"spk-DALEN"},
+  GEC:     {label:"GEC",     cls:"spk-GEC"},
+  GRC:     {label:"GRC",     cls:"spk-GRC"},
+  NEXUS:   {label:"Nexus",   cls:"spk-NEXUS"},
+  APEX:    {label:"Apex",    cls:"spk-APEX"},
+  HORIZON: {label:"Horizon", cls:"spk-HORIZON"},
+  CLC:  {label:"CLC",  cls:"spk-CLC"},
+  GEMMA:   {label:"Gemma",   cls:"spk-GEMMA"},
+  SYSTEM:  {label:"System",  cls:"spk-SYSTEM"},
+  FACTORY: {label:"Factory", cls:"spk-SYSTEM"}
+};
+
+var COMMANDS=[
+  {cmd:"/plan",         desc:"PydanticCouncil round-trip — CL + GEMP + GRM synthesis for contested asks"},
+  {cmd:"/cascade",      desc:"Async task — plain English → Dead Drop → OpenClaw executes"},
+  {cmd:"/decision",     desc:"Run decision gate before committing"},
+  {cmd:"/summary",      desc:"Draft committee summary for cross-posting"},
+  {cmd:"/inject",       desc:"/inject [committee]"},
+  {cmd:"/file",         desc:"Read any file on PF and inject into context"},
+  {cmd:"/history",      desc:"/history [committee] [n] — inject past messages"},
+  {cmd:"/task",         desc:"Send task to PydanticAI daemon"},
+  {cmd:"/task-add",     desc:"Append item to EMPIRE_TASKS.md"},
+  {cmd:"/propose",      desc:"Execute a proposed command via cl_bridge"},
+  {cmd:"/wiki",         desc:"Access or compile Empire Wiki"}
+];
+
+var messageStore=new Map();
+var appEl=document.getElementById("app");
+var tooltipEl=document.getElementById("floating-tooltip");
+var messagesEl=document.getElementById("messages");
+var inputEl=document.getElementById("user-input");
+var sendBtn=document.getElementById("send-btn");
+var stopBtn=document.getElementById("stop-btn");
+var bannerEl=document.getElementById("banner");
+var dropzoneEl=document.getElementById("dropzone");
+var acEl=document.getElementById("autocomplete");
+var statusEl=document.getElementById("status");
+var committeeEl=document.getElementById("committee-label");
+
+function updateFactoryButtonVisibility() {
+    const factoryBtn = document.getElementById('factory-btn');
+    if (!factoryBtn) return;
+    const factoryTabs = ['tech', 'trading'];
+    const active = window.activeCommittee || '';
+    factoryBtn.style.display = factoryTabs.includes(active) ? 'inline-block' : 'none';
+}
+
+function renderSidebar(){
+  var list=document.getElementById("nav-list");
+  var html="";
+  for(var i=0;i<COMMITTEES.length;i++){
+    var c=COMMITTEES[i];
+    var active=c.key===activeCommittee?" active":"";
+    html+='<div class="nav-item'+active+'" data-key="'+c.key+'" data-label="'+c.label+'" onclick="setCommittee(\''+c.key+'\')">'+
+          '<span class="nav-icon">'+(NAV_ICONS[c.key]||"")+'</span>'+
+          '<span class="nav-label">'+c.label+'</span>'+
+          '</div>';
+  }
+  list.innerHTML=html;
+  var items=list.querySelectorAll(".nav-item");
+  for(var j=0;j<items.length;j++){
+    (function(el){
+      el.addEventListener("mouseenter",function(){
+        if(!sidebarCollapsed)return;
+        var appRect=appEl.getBoundingClientRect();
+        var elRect=el.getBoundingClientRect();
+        tooltipEl.textContent=el.getAttribute("data-label");
+        tooltipEl.style.display="block";
+        tooltipEl.style.top=(elRect.top-appRect.top+elRect.height/2-13)+"px";
+        tooltipEl.style.left="50px";
+      });
+      el.addEventListener("mouseleave",function(){
+        tooltipEl.style.display="none";
+      });
+    })(items[j]);
+  }
+}
+
+function renderHeader(){
+  var c=null;
+  for(var i=0;i<COMMITTEES.length;i++){
+    if(COMMITTEES[i].key===activeCommittee){c=COMMITTEES[i];break;}
+  }
+  if(!c)return;
+  committeeEl.textContent=c.label.toUpperCase();
+  document.getElementById("footer-committee").textContent=c.label.toUpperCase();
+  var html="";
+  for(var i=0;i<c.agents.length;i++){
+    html+='<span class="pill pill-'+c.agents[i]+'">'+c.agents[i]+'</span>';
+  }
+  document.getElementById("agent-pills").innerHTML=html;
+}
+
+function setCommittee(key){
+  activeCommittee=key;
+  renderSidebar();
+  renderHeader();
+  messagesEl.innerHTML="";
+  updateFactoryButtonVisibility();
+  loadHistory();
+}
+
+function toggleSidebar(){
+  sidebarCollapsed=!sidebarCollapsed;
+  document.getElementById("sidebar").classList.toggle("collapsed",sidebarCollapsed);
+  tooltipEl.style.display="none";
+}
+
+function openOps(){document.getElementById("ops-overlay").classList.add("open");}
+function closeOps(){document.getElementById("ops-overlay").classList.remove("open");}
+function openCheatsheet(){var body=document.getElementById("cs-body");var html="";for(var i=0;i<COMMITTEES.length;i++){var c=COMMITTEES[i];var tags="";for(var j=0;j<c.agents.length;j++){tags+='<span class="cs-tag">'+c.agents[j]+"</span>";}tags+='<span class="cs-tag esc">&#x2191; '+c.escalation+"</span>";html+='<div class="cs-row"><div class="cs-row-header"><span class="cs-name">'+c.label+'</span><span class="cs-engine">'+c.engine+"</span></div>"+'<div class="cs-scope">'+c.scope+"</div>"+'<div class="cs-meta">'+tags+"</div></div>";}body.innerHTML=html;document.getElementById("overlay").classList.add("open");}
+function closeCheatsheet(){document.getElementById("overlay").classList.remove("open");}
+document.getElementById("overlay").addEventListener("click",function(e){if(e.target===this)closeCheatsheet();});
+document.getElementById("ops-overlay").addEventListener("click",function(e){if(e.target===this)closeOps();});
+document.getElementById("ops-overlay").addEventListener("click",function(e){
+  if(e.target===this)closeOps();
+});
+
+function escHtml(t){return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function fmt(ts){var d=ts?new Date(parseFloat(ts)*1000):new Date();return d.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true})}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
+function smartScroll(){var threshold=120;var atBottom=messagesEl.scrollHeight-messagesEl.scrollTop-messagesEl.clientHeight<threshold;if(atBottom)messagesEl.scrollTop=messagesEl.scrollHeight}
+function copyIcon(){return'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>'}
+
+function copyMessage(id,btn){
+  var text=messageStore.get(id)||"";
+  // execCommand fallback for Safari over HTTP (navigator.clipboard requires HTTPS)
+  try{
+    var ta=document.createElement("textarea");
+    ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    if(btn){btn.textContent="copied";setTimeout(function(){btn.innerHTML=copyIcon()+" copy"},1500)}
+  }catch(e){
+    if(navigator.clipboard){
+      navigator.clipboard.writeText(text).then(function(){
+        if(btn){btn.textContent="copied";setTimeout(function(){btn.innerHTML=copyIcon()+" copy"},1500)}
+      }).catch(function(){});
+    }
+  }
+}
+
+function replyTo(speaker){
+  inputEl.value="@"+speaker.toLowerCase()+" ";
+  inputEl.focus();
+}
+
+function insertMention(handle){
+  var current=inputEl.value.trim();
+  inputEl.value=current?handle+" "+current:handle+" ";
+  inputEl.focus();
+  inputEl.setSelectionRange(inputEl.value.length,inputEl.value.length);
+}
+
+function renderMessage(speaker,content,timestamp){
+  var spk=SPEAKERS[speaker]||{label:speaker,cls:"spk-SYSTEM"};
+  var msgId="msg_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+  messageStore.set(msgId,content);
+  var msg=document.createElement("div");
+  msg.className="msg"+(speaker==="DALEN"?" msg-dalen":"");
+  msg.innerHTML='<div class="msg-meta"><span class="msg-speaker '+spk.cls+'">'+spk.label+'</span><span class="msg-time">'+fmt(timestamp)+'</span></div>'+
+    '<div class="msg-body">'+escHtml(content)+'</div>'+
+    '<div class="msg-actions">'+
+    '<button class="copy-btn" onclick="copyMessage(\''+msgId+'\',this)">'+copyIcon()+' copy</button>'+
+    '<button class="copy-btn" onclick="replyTo(\''+speaker+'\')">&#x21A9; reply</button>'+
+    '</div>';
+  messagesEl.appendChild(msg);
+  messagesEl.scrollTop=messagesEl.scrollHeight;
+  return msg;
+}
+
+async function streamRender(speaker,fullText){
+  var spk=SPEAKERS[speaker]||{label:speaker,cls:"spk-SYSTEM"};
+  var msgId="msg_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+  messageStore.set(msgId,fullText);
+  var msg=document.createElement("div");
+  msg.className="msg"+(speaker==="DALEN"?" msg-dalen":"");
+  var bodyEl=document.createElement("div");
+  bodyEl.className="msg-body streaming";
+  msg.innerHTML='<div class="msg-meta"><span class="msg-speaker '+spk.cls+'">'+spk.label+'</span><span class="msg-time">'+fmt(null)+'</span></div>';
+  msg.appendChild(bodyEl);
+  messagesEl.appendChild(msg);
+  var words=fullText.split(" ");
+  var rendered="";
+  for(var i=0;i<words.length;i++){
+    rendered+=(i>0?" ":"")+words[i];
+    bodyEl.textContent=rendered;
+    smartScroll();
+    await sleep(18);
+  }
+  bodyEl.classList.remove("streaming");
+  var actions=document.createElement("div");
+  actions.className="msg-actions";
+  actions.innerHTML='<button class="copy-btn" onclick="copyMessage(\''+msgId+'\',this)">'+copyIcon()+' copy</button>'+
+    '<button class="copy-btn" onclick="replyTo(\''+speaker+'\')">&#x21A9; reply</button>';
+  msg.appendChild(actions);
+  smartScroll();
+}
+
+async function loadHistory(){
+  try{
+    var r=await fetch(API+"/startup");
+    var data=await r.json();
+    bannerEl.textContent=data.banner;
+    var msgs=data.history[activeCommittee]||[];
+    messagesEl.innerHTML="";
+    for(var i=0;i<msgs.length;i++){renderMessage(msgs[i].speaker,msgs[i].content,msgs[i].timestamp)}
+    messagesEl.scrollTop=messagesEl.scrollHeight;
+    if(msgs.length>0){_lastMsgTime[activeCommittee]=parseFloat(msgs[msgs.length-1].timestamp||0);}
+  }catch(e){
+    bannerEl.textContent="Could not connect to Strategic Brain server.";
+  }
+}
+
+async function sendStop(){
+  // Stop must work even while waiting — that's the entire point
+  // Send /stop directly to the API without going through sendMessage()
+  // which would be blocked by the isWaiting guard
+  try {
+    await fetch(API + "/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message: "/stop", committee: activeCommittee, injected_file: ""})
+    });
+    renderMessage("SYSTEM", "[Stop signal sent]", null);
+    _lastMsgTime[activeCommittee]=Date.now()/1000;
+  } catch(e) {
+    renderMessage("SYSTEM", "Stop failed: " + e.message, null);
+    _lastMsgTime[activeCommittee]=Date.now()/1000;
+  }
+}
+
+async function sendMessage(){
+  var text=inputEl.value.trim();
+  if(!text||isWaiting)return;
+  renderMessage("DALEN",text,null);
+  inputEl.value="";
+  inputEl.style.height="42px";
+  hideAutocomplete();
+  isWaiting=true;
+  sendBtn.disabled=true;
+  sendBtn.classList.add("waiting");
+  sendBtn.innerHTML='<span class="spinner"></span>Thinking';
+  statusEl.textContent="waiting...";
+
+  // Show thinking indicator in chat with elapsed timer
+  var thinkingEl=document.createElement("div");
+  thinkingEl.className="thinking-msg";
+  thinkingEl.id="thinking-indicator";
+  var startTime=Date.now();
+  thinkingEl.innerHTML='<span class="spinner"></span><span>Thinking...</span><span class="thinking-elapsed" id="thinking-elapsed">0s</span>';
+  messagesEl.appendChild(thinkingEl);
+  messagesEl.scrollTop=messagesEl.scrollHeight;
+
+  // Tick elapsed time every second
+  var tickInterval=setInterval(function(){
+    var el=document.getElementById("thinking-elapsed");
+    if(el){el.textContent=Math.round((Date.now()-startTime)/1000)+"s";}
+  },1000);
+
+  var injectedFileContent="";
+  if(injectedFiles.length){
+    injectedFileContent=injectedFiles.map(function(f){return"[FILE: "+f.name+"]\n"+f.content}).join("\n\n");
+    clearInjectedFile();
+  }
+  try{
+    var r=await fetch(API+"/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({message:text,committee:activeCommittee,injected_file:injectedFileContent})
+    });
+    var data=await r.json();
+    // Remove thinking indicator
+    clearInterval(tickInterval);
+    var ind=document.getElementById("thinking-indicator");
+    if(ind){ind.remove();}
+    if(data.system_message){renderMessage("SYSTEM",data.system_message,null);}
+    var entries=Object.entries(data.responses||{});
+    for(var i=0;i<entries.length;i++){
+      await streamRender(entries[i][0].toUpperCase(),entries[i][1]);
+    }
+    _lastMsgTime[activeCommittee]=Date.now()/1000;
+  }catch(e){
+    clearInterval(tickInterval);
+    var ind=document.getElementById("thinking-indicator");
+    if(ind){ind.remove();}
+    renderMessage("SYSTEM","Error: "+e.message,null);
+    _lastMsgTime[activeCommittee]=Date.now()/1000;
+  }
+  isWaiting=false;
+  sendBtn.disabled=false;
+  sendBtn.classList.remove("waiting");
+  sendBtn.innerHTML="Send";
+  statusEl.textContent="ready";
+  inputEl.focus();
+}
+
+function handleAutocomplete(){
+  var val=inputEl.value;
+  if(!val.startsWith("/")){hideAutocomplete();return}
+  var partial=val.toLowerCase();
+  var matches=COMMANDS.filter(function(c){return c.cmd.startsWith(partial)});
+  if(!matches.length||(matches.length===1&&matches[0].cmd===val)){hideAutocomplete();return}
+  acIndex=-1;
+  var html="";
+  for(var i=0;i<matches.length;i++){
+    html+='<div class="ac-item" data-cmd="'+matches[i].cmd+'"><span class="ac-cmd">'+matches[i].cmd+'</span><span class="ac-desc">'+matches[i].desc+'</span></div>';
+  }
+  acEl.innerHTML=html;
+  acEl.querySelectorAll(".ac-item").forEach(function(el){
+    el.addEventListener("click",function(){inputEl.value=el.getAttribute("data-cmd")+" ";hideAutocomplete();inputEl.focus()});
+  });
+  var rect=inputEl.getBoundingClientRect();
+  acEl.style.left=rect.left+"px";
+  acEl.style.bottom=(window.innerHeight-rect.top+4)+"px";
+  acEl.style.minWidth=rect.width+"px";
+  acEl.style.display="block";
+}
+function moveAc(dir){var items=acEl.querySelectorAll(".ac-item");items.forEach(function(i){i.classList.remove("selected")});acIndex=Math.max(0,Math.min(items.length-1,acIndex+dir));items[acIndex].classList.add("selected")}
+function selectAc(){var sel=acEl.querySelector(".ac-item.selected")||acEl.querySelector(".ac-item");if(sel){inputEl.value=sel.getAttribute("data-cmd")+" ";hideAutocomplete();inputEl.focus()}}
+function hideAutocomplete(){acEl.style.display="none";acIndex=-1}
+
+inputEl.addEventListener("input",function(){
+  inputEl.style.height="42px";
+  inputEl.style.height=Math.min(inputEl.scrollHeight,160)+"px";
+  handleAutocomplete();
+});
+inputEl.addEventListener("keydown",function(e){
+  if(acEl.style.display==="block"){
+    if(e.key==="ArrowDown"){e.preventDefault();moveAc(1);return}
+    if(e.key==="ArrowUp"){e.preventDefault();moveAc(-1);return}
+    if(e.key==="Enter"||e.key==="Tab"){e.preventDefault();selectAc();return}
+    if(e.key==="Escape"){hideAutocomplete();return}
+  }
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage()}
+});
+stopBtn.addEventListener("click",sendStop);
+sendBtn.addEventListener("click",sendMessage);
+
+var ALLOWED_EXT=[".md",".py",".json",".txt",".log"];
+dropzoneEl.addEventListener("dragover",function(e){e.preventDefault();dropzoneEl.classList.add("drag-over")});
+dropzoneEl.addEventListener("dragleave",function(){dropzoneEl.classList.remove("drag-over")});
+dropzoneEl.addEventListener("drop",function(e){
+  e.preventDefault();
+  dropzoneEl.classList.remove("drag-over");
+  var files=Array.from(e.dataTransfer.files);
+  if(!files.length)return;
+  var validFiles=[];
+  var invalidFiles=[];
+  files.forEach(function(file){
+    var ext="."+file.name.split(".").pop().toLowerCase();
+    if(ALLOWED_EXT.includes(ext)){validFiles.push(file)}else{invalidFiles.push(file.name)}
+  });
+  if(invalidFiles.length){
+    dropzoneEl.textContent=invalidFiles.length+" file(s) not supported";
+    setTimeout(function(){
+      if(validFiles.length){processFiles(validFiles)}
+      else{dropzoneEl.textContent="Drop file here to inject into next message (.md .py .json .txt .log)"}
+    },2000);
+    return;
+  }
+  processFiles(validFiles);
+});
+function processFiles(files){
+  var readers=files.map(function(file){
+    return new Promise(function(resolve){
+      var reader=new FileReader();
+      reader.onload=function(ev){resolve({name:file.name,content:ev.target.result})};
+      reader.readAsText(file);
+    });
+  });
+  Promise.all(readers).then(function(fileContents){
+    injectedFiles=fileContents;
+    dropzoneEl.textContent="&#x2713; "+files.length+" file(s) ready: "+fileContents.map(function(f){return f.name}).join(", ");
+    dropzoneEl.classList.add("has-file");
+  });
+}
+dropzoneEl.addEventListener("click",function(){if(injectedFiles.length)clearInjectedFile()});
+function clearInjectedFile(){
+  injectedFiles=[];
+  dropzoneEl.textContent="Drop file here to inject into next message (.md .py .json .txt .log)";
+  dropzoneEl.classList.remove("has-file");
+}
+
+// Factory button click handler - bypasses sendMessage guards
+document.getElementById('factory-btn').addEventListener('click', async function() {
+    const input = document.getElementById('user-input');
+    if (!input) return;
+    const goal = input.value.trim();
+    if (!goal) return;
+    
+    // Prepend /cascade to the message and capture BEFORE any changes
+    const cascadeMessage = '/cascade ' + goal;
+    const originalInput = cascadeMessage;  // Capture the message before modifying input
+    
+    // Show the message in the chat
+    renderMessage("FACTORY", originalInput, null);
+    
+    // Show factory running indicator
+    const factoryStatus = document.getElementById('factory-status');
+    if (factoryStatus) factoryStatus.style.display = 'block';
+    
+    // Clear the input field (visual feedback only)
+    input.value = "";
+    input.style.height = "42px";
+    
+    // Prepare injected file content
+    var injectedFileContent = "";
+    if (injectedFiles.length) {
+        injectedFileContent = injectedFiles.map(function(f) { 
+            return "[FILE: " + f.name + "]\n" + f.content; 
+        }).join("\n\n");
+        clearInjectedFile();
+    }
+    
+    try {
+        // POST to /chat — /cascade prefix in message handles routing
+        var r = await fetch(API + "/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                message: originalInput, 
+                committee: activeCommittee, 
+                injected_file: injectedFileContent 
+            })
+        });
+        
+        var data = await r.json();
+        
+        // Handle response
+        if (data.system_message) { 
+            renderMessage("SYSTEM", data.system_message, null); 
+        }
+        
+        // Render any responses from agents
+        var entries = Object.entries(data.responses || {});
+        for (var i = 0; i < entries.length; i++) {
+            await streamRender(entries[i][0].toUpperCase(), entries[i][1]);
+        }
+        
+        // If no specific responses, show a generic success message
+        if (entries.length === 0 && !data.system_message) {
+            renderMessage("SYSTEM", "Cascade task submitted. Results will be posted when ready.", null);
+        }
+        _lastMsgTime[activeCommittee]=Date.now()/1000;
+        
+    } catch (e) {
+        renderMessage("SYSTEM", "Error submitting cascade: " + e.message, null);
+    } finally {
+        // Hide factory running indicator — result posting to tab is the completion signal
+        if (factoryStatus) factoryStatus.style.display = 'none';
+    }
+    
+    // Focus back on input for next command
+    input.focus();
+});
+
+var _lastMsgTime={};
+setInterval(async function(){
+ // Skip polling while a /chat request is in flight — otherwise the poll
+ // returns messages the POST handler hasn't rendered yet, causing duplication
+ // on long-running calls like /plan round-trips.
+ if(isWaiting)return;
+ try{
+ var since=_lastMsgTime[activeCommittee]||0;
+ var r=await fetch(API+'/poll?committee='+activeCommittee+'&since='+since);
+ var data=await r.json();
+ var msgs=data.messages||[];
+ if(msgs.length>0){
+ for(var i=0;i<msgs.length;i++){
+ renderMessage(msgs[i].speaker,msgs[i].content,msgs[i].timestamp);
+ _lastMsgTime[activeCommittee]=Math.max(_lastMsgTime[activeCommittee]||0,parseFloat(msgs[i].timestamp||0));
+ }
+ messagesEl.scrollTop=messagesEl.scrollHeight;
+ }
+ }catch(e){}
+},4000);
+
+renderSidebar();
+renderHeader();
+loadHistory();
+updateFactoryButtonVisibility();
+inputEl.focus();
+</script>
+<script src="ops_cheatsheet.js"></script>
+</body>
+</html>
